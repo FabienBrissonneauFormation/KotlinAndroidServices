@@ -25,7 +25,8 @@ class ServiceLieLocal  : Service() {
 
 
     fun laFonctionQuiMinteresse()  : String {
-        Log.d(TAG,"Thread du service : ${Thread.currentThread().id}")
+        Log.d(TAG,"Thread du service local : ${Thread.currentThread().id}")
+        Log.d(TAG,"Process du service local : ${android.os.Process.myPid()}")
         return LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
     }
 

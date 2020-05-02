@@ -4,17 +4,15 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.os.Bundle
-import android.os.IBinder
+import android.os.*
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import biz.ei6.navigationdrawer.R
+import biz.ei6.navigationdrawer.ServiceLieDistant
 import biz.ei6.navigationdrawer.ServiceLieLocal
 import kotlinx.android.synthetic.main.fragment_home.view.*
 
@@ -36,6 +34,7 @@ class HomeFragment : Fragment() {
         root.home_servicelieappel.setOnClickListener { appelServiceLocal() }
 
         root.home_serviceautreprocessus.setOnClickListener { lanceServiceDistant() }
+        root.home_serviceautreprocessusappel.setOnClickListener { appelServiceDistant() }
 
         return root
     }
@@ -65,11 +64,47 @@ class HomeFragment : Fragment() {
 
     private fun appelServiceLocal() {
         Log.d(TAG,"Thread du home : ${Thread.currentThread().id}")
+        Log.d(TAG,"Process du home : ${android.os.Process.myPid()}")
         serviceLieLocal?.laFonctionQuiMinteresse()
     }
 
-    private fun lanceServiceDistant() {
+    var serviceLieDistant : Messenger? = null
+    var estLieDistant : Boolean = false
+
+    val maConnexionDistante = object : ServiceConnection {
+        override fun onServiceDisconnected(name: ComponentName?) {
+            estLieDistant = false
+            serviceLieDistant = null
+        }
+
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+
+            serviceLieDistant = Messenger(service)
+            Log.d(TAG,"le service  distant est démarré")
+            estLieDistant = true
+        }
 
     }
+    private fun lanceServiceDistant() {
+        val intent = Intent(requireContext(), ServiceLieDistant::class.java)
+        requireActivity().bindService(intent, maConnexionDistante, Context.BIND_AUTO_CREATE)
+    }
+    private fun appelServiceDistant() {
 
+        if(!estLieDistant) return
+
+        Log.d(TAG,"Thread du home : ${Thread.currentThread().id}")
+        Log.d(TAG,"Process du home : ${android.os.Process.myPid()}")
+        val msg = Message.obtain()
+        val bundle = Bundle()
+        bundle.putString("param","message au service distant")
+        msg.data = bundle
+
+        try {
+            serviceLieDistant?.send(msg)
+        }
+        catch(ex : RemoteException) {
+            Log.d(TAG, "Exception remote $ex")
+        }
+    }
 }
